@@ -19,6 +19,9 @@
 // SOIL é a biblioteca para leitura das imagens
 #include <SOIL.h>
 
+// math
+#include <math.h>
+
 // Um pixel RGB (24 bits)
 typedef struct
 {
@@ -75,14 +78,46 @@ void load(char *name, Img *pic)
     printf("Load: %d x %d x %d\n", pic->width, pic->height, chan);
 }
 
+
+int** calculaEnergia(int targetWidth){
+ 
+
+}
+
 //
 // Implemente AQUI o seu algoritmo
 void seamcarve(int targetWidth)
 {
     // Aplica o algoritmo e gera a saida em target->img...
 
-    RGB8(*ptr)
-    [target->width] = (RGB8(*)[target->width])target->img;
+    int deltaX;
+    int deltaY;
+    RGB8(*ptr)[target->width] = (RGB8(*)[target->width])target->img;
+    int eng[target->height][target->width];
+
+    for (int y = 0; y < target->height; y++)
+    {
+        for (int x = 0; x < target->width; x++){
+
+            if(y == 0){
+                deltaY = pow(ptr[target->height-1][x].r - ptr[y+1][x].r, 2) + pow(ptr[target->height-1][x].g - ptr[y+1][x].g, 2) + pow(ptr[target->height-1][x].b - ptr[y+1][x].b, 2);
+            }else if(y==target->height-1){
+                deltaY = pow(ptr[y-1][x].r - ptr[0][x].r, 2) + pow(ptr[y-1][x].g - ptr[0][x].g, 2) + pow(ptr[y-1][x].b - ptr[0][x].b, 2);
+            }else{
+                deltaY = pow(ptr[y-1][x].r - ptr[y+1][x].r, 2) + pow(ptr[y-1][x].g - ptr[y+1][x].g, 2) + pow(ptr[y-1][x].b - ptr[y+1][x].b, 2);
+            }
+
+            if(x == 0){
+                deltaX = pow(ptr[y][target->width-1].r - ptr[y][x+1].r, 2) + pow(ptr[y][target->width-1].g - ptr[y][x+1].g, 2) + pow(ptr[y][target->width-1].b - ptr[y][x+1].b, 2);
+            }else if(x==target->width-1){
+                deltaX = pow(ptr[y][x-1].r - ptr[y][0].r, 2) + pow(ptr[y][x-1].g - ptr[y][0].g, 2) + pow(ptr[y][x-1].b - ptr[y][0].b, 2);
+            }else{
+                deltaX = pow(ptr[y][x-1].r - ptr[y][x+1].r, 2) + pow(ptr[y][x-1].g - ptr[y][x+1].g, 2) + pow(ptr[y][x-1].b - ptr[y][x+1].b, 2);
+            }
+            
+            eng[y][x] = deltaX + deltaY;
+        }
+    }
 
     for (int y = 0; y < target->height; y++)
     {
@@ -96,6 +131,7 @@ void seamcarve(int targetWidth)
     uploadTexture();
     glutPostRedisplay();
 }
+
 
 void freemem()
 {
