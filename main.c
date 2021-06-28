@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h> // Para usar strings
+#include <math.h>
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
 #ifdef WIN32
 #include <windows.h> // Apenas para Windows
@@ -18,9 +21,6 @@
 
 // SOIL é a biblioteca para leitura das imagens
 #include <SOIL.h>
-
-// math
-#include <math.h>
 
 // Um pixel RGB (24 bits)
 typedef struct
@@ -94,9 +94,9 @@ void seamcarve(int targetWidth)
     int deltaY;
     RGB8(*ptr)[target->width] = (RGB8(*)[target->width])target->img;
     int eng[target->height][target->width];
+    int engTotal[target->height][target->width];
 
-    for (int y = 0; y < target->height; y++)
-    {
+    for (int y = 0; y < target->height; y++){
         for (int x = 0; x < target->width; x++){
 
             if(y == 0){
@@ -119,12 +119,20 @@ void seamcarve(int targetWidth)
         }
     }
 
-    for (int y = 0; y < target->height; y++)
-    {
-        for (int x = 0; x < targetW; x++)
-            ptr[y][x].r = ptr[y][x].g = 255;
-        for (int x = targetW; x < target->width; x++)
-            ptr[y][x].r = ptr[y][x].g = 0;
+    for (int y = 0; y < target->height; y++){
+        for (int x = 0; x < target->width; x++){
+            if(y == 0){
+                engTotal[y][x] = eng[y][x];
+            }else{
+                if(x == 0){
+                    engTotal[y][x] = MIN(engTotal[y-1][x],engTotal[y-1][x+1]) + eng[y][x];
+                }else if(x==target->width-1){
+                    engTotal[y][x] = MIN(engTotal[y-1][x-1],engTotal[y-1][x]) + eng[y][x];
+                }else{
+                    engTotal[y][x] = MIN(MIN(engTotal[y-1][x-1],engTotal[y-1][x]),engTotal[y-1][x+1]) + eng[y][x];
+                }
+            }
+        }
     }
     // Chame uploadTexture a cada vez que mudar
     // a imagem (pic[2])
