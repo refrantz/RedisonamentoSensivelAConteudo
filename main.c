@@ -65,6 +65,8 @@ Img *target;
 // Imagem selecionada (0,1,2)
 int sel;
 
+boolean first = TRUE;
+
 // Carrega uma imagem para a struct Img
 void load(char *name, Img *pic)
 {
@@ -78,23 +80,29 @@ void load(char *name, Img *pic)
     printf("Load: %d x %d x %d\n", pic->width, pic->height, chan);
 }
 
-
-int** calculaEnergia(int targetWidth){
- 
-
-}
-
 //
 // Implemente AQUI o seu algoritmo
 void seamcarve(int targetWidth)
 {
     // Aplica o algoritmo e gera a saida em target->img...
-
+    printf("aaaaaa");
     int deltaX;
     int deltaY;
     RGB8(*ptr)[target->width] = (RGB8(*)[target->width])target->img;
     int eng[target->height][target->width];
     int engTotal[target->height][target->width];
+
+    if(first){
+        RGB8(*ptrS)[source->width] = (RGB8(*)[source->width])source->img;
+        for (int y = 0; y < target->height; y++){
+            for (int x = 0; x < target->width; x++){
+                ptr[y][x].r = ptrS[y][x].r;
+                ptr[y][x].g = ptrS[y][x].g;
+                ptr[y][x].b = ptrS[y][x].b;
+            }
+        }
+        first = FALSE;
+    }
 
     for (int y = 0; y < target->height; y++){
         for (int x = 0; x < target->width; x++){
@@ -134,6 +142,39 @@ void seamcarve(int targetWidth)
             }
         }
     }
+
+    int xDoMenorAtual = -2;
+    int menor = -2;
+    int menorCaminho[target->height];
+    int xDoMenorAnterior = -2;
+
+    for(int x = 0; x < target->width; x++){
+        if(menor > engTotal[target->height-1][x]){
+            menor = engTotal[target->height-1][x];
+            xDoMenorAnterior = x;
+        }
+    }
+
+    menor = -2;
+    menorCaminho[target->height-1] = xDoMenorAnterior;
+
+    for(int y = target->height-1; y > 0; y--){
+        for(int offset = -1; offset <= 1; offset++){
+            if(menor > engTotal[y-1][xDoMenorAnterior+offset]){
+                menor = engTotal[y-1][xDoMenorAnterior+offset];
+                xDoMenorAtual = xDoMenorAnterior+offset;
+            }
+        }
+        
+        xDoMenorAnterior = xDoMenorAtual;
+        menorCaminho[y-1] = xDoMenorAnterior;
+    }
+
+    for(int y = 0; y < target->height; y++){
+        printf("aaaaaa");
+        ptr[y][menorCaminho[y]].r = ptr[y][menorCaminho[y]].g = ptr[y][menorCaminho[y]].b = 0;
+    }
+    
     // Chame uploadTexture a cada vez que mudar
     // a imagem (pic[2])
     uploadTexture();
