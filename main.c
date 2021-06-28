@@ -85,7 +85,6 @@ void load(char *name, Img *pic)
 void seamcarve(int targetWidth)
 {
     // Aplica o algoritmo e gera a saida em target->img...
-    printf("aaaaaa");
     int deltaX;
     int deltaY;
     RGB8(*ptr)[target->width] = (RGB8(*)[target->width])target->img;
@@ -105,7 +104,7 @@ void seamcarve(int targetWidth)
     }
 
     for (int y = 0; y < target->height; y++){
-        for (int x = 0; x < target->width; x++){
+        for (int x = 0; x < targetW; x++){
 
             if(y == 0){
                 deltaY = pow(ptr[target->height-1][x].r - ptr[y+1][x].r, 2) + pow(ptr[target->height-1][x].g - ptr[y+1][x].g, 2) + pow(ptr[target->height-1][x].b - ptr[y+1][x].b, 2);
@@ -116,8 +115,8 @@ void seamcarve(int targetWidth)
             }
 
             if(x == 0){
-                deltaX = pow(ptr[y][target->width-1].r - ptr[y][x+1].r, 2) + pow(ptr[y][target->width-1].g - ptr[y][x+1].g, 2) + pow(ptr[y][target->width-1].b - ptr[y][x+1].b, 2);
-            }else if(x==target->width-1){
+                deltaX = pow(ptr[y][targetW-1].r - ptr[y][x+1].r, 2) + pow(ptr[y][targetW-1].g - ptr[y][x+1].g, 2) + pow(ptr[y][targetW-1].b - ptr[y][x+1].b, 2);
+            }else if(x==targetW-1){
                 deltaX = pow(ptr[y][x-1].r - ptr[y][0].r, 2) + pow(ptr[y][x-1].g - ptr[y][0].g, 2) + pow(ptr[y][x-1].b - ptr[y][0].b, 2);
             }else{
                 deltaX = pow(ptr[y][x-1].r - ptr[y][x+1].r, 2) + pow(ptr[y][x-1].g - ptr[y][x+1].g, 2) + pow(ptr[y][x-1].b - ptr[y][x+1].b, 2);
@@ -128,13 +127,13 @@ void seamcarve(int targetWidth)
     }
 
     for (int y = 0; y < target->height; y++){
-        for (int x = 0; x < target->width; x++){
+        for (int x = 0; x < targetW; x++){
             if(y == 0){
                 engTotal[y][x] = eng[y][x];
             }else{
                 if(x == 0){
                     engTotal[y][x] = MIN(engTotal[y-1][x],engTotal[y-1][x+1]) + eng[y][x];
-                }else if(x==target->width-1){
+                }else if(x==targetW-1){
                     engTotal[y][x] = MIN(engTotal[y-1][x-1],engTotal[y-1][x]) + eng[y][x];
                 }else{
                     engTotal[y][x] = MIN(MIN(engTotal[y-1][x-1],engTotal[y-1][x]),engTotal[y-1][x+1]) + eng[y][x];
@@ -144,18 +143,18 @@ void seamcarve(int targetWidth)
     }
 
     int xDoMenorAtual = -2;
-    int menor = -2;
+    int menor = __INT_MAX__;
     int menorCaminho[target->height];
     int xDoMenorAnterior = -2;
 
-    for(int x = 0; x < target->width; x++){
+    for(int x = 0; x < targetW; x++){
         if(menor > engTotal[target->height-1][x]){
             menor = engTotal[target->height-1][x];
             xDoMenorAnterior = x;
         }
     }
 
-    menor = -2;
+    menor = __INT_MAX__;
     menorCaminho[target->height-1] = xDoMenorAnterior;
 
     for(int y = target->height-1; y > 0; y--){
@@ -171,9 +170,18 @@ void seamcarve(int targetWidth)
     }
 
     for(int y = 0; y < target->height; y++){
-        printf("aaaaaa");
         ptr[y][menorCaminho[y]].r = ptr[y][menorCaminho[y]].g = ptr[y][menorCaminho[y]].b = 0;
     }
+
+    for(int y = 0; y < target->height; y++){
+        for(int x = menorCaminho[y]; x < targetW; x++){
+            ptr[y][x].r = ptr[y][x+1].r;
+            ptr[y][x].g = ptr[y][x+1].g;
+            ptr[y][x].b = ptr[y][x+1].b;
+        }
+    }
+
+    //target->width -= 1;
     
     // Chame uploadTexture a cada vez que mudar
     // a imagem (pic[2])
