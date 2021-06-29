@@ -90,7 +90,7 @@ void seamcarve(int targetWidth)
     RGB8(*ptr)[target->width] = (RGB8(*)[target->width])target->img;
     RGB8(*ptrM)[mask->width] = (RGB8(*)[mask->width])mask->img;
     RGB8(*ptrS)[source->width] = (RGB8(*)[source->width])source->img;
-    int copiaMascara[__INT_MAX__][__INT_MAX__];
+    int copiaMascara[mask->height][mask->width];
 
     for (int y = 0; y < target->height; y++){
         for (int x = 0; x < target->width; x++){
@@ -99,11 +99,11 @@ void seamcarve(int targetWidth)
             ptr[y][x].b = ptrS[y][x].b;
 
             if(ptrM[y][x].r < 50 && ptrM[y][x].g > 150 && ptrM[y][x].b < 50){
-                //copiaMascara[y][x] = 2;
+                copiaMascara[y][x] = 2;
             }else if(ptrM[y][x].r > 150 && ptrM[y][x].g < 50 && ptrM[y][x].b < 50){
-                //copiaMascara[y][x] = 1;         
+                copiaMascara[y][x] = 1;         
             }else{
-                //copiaMascara[y][x] = 0;
+                copiaMascara[y][x] = 0;
             }
         }
     }
@@ -115,15 +115,16 @@ void seamcarve(int targetWidth)
         int eng[target->height][target->width];
         int engTotal[target->height][target->width];
 
+        //calcula energia
         for (int y = 0; y < target->height; y++){
             for (int x = 0; x < targetW; x++){
-                if(copiaMascara[y][x] == 2){
-                    deltaX = 1000000;
-                    deltaY = 0;
-                }else if(copiaMascara[y][x] == 1){
-                    deltaX = -1000000;
-                    deltaY = 0;
-                }else{
+                //if(copiaMascara[y][x] == 2){
+                    //deltaX = 1000000;
+                    //deltaY = 0;
+                //}else if(copiaMascara[y][x] == 1){
+                    //deltaX = -1000000;
+                    //deltaY = 0;
+                //}else{
                     if(y == 0){
                         deltaY = pow(ptr[target->height-1][x].r - ptr[y+1][x].r, 2) + pow(ptr[target->height-1][x].g - ptr[y+1][x].g, 2) + pow(ptr[target->height-1][x].b - ptr[y+1][x].b, 2);
                     }else if(y==target->height-1){
@@ -139,11 +140,12 @@ void seamcarve(int targetWidth)
                     }else{
                         deltaX = pow(ptr[y][x-1].r - ptr[y][x+1].r, 2) + pow(ptr[y][x-1].g - ptr[y][x+1].g, 2) + pow(ptr[y][x-1].b - ptr[y][x+1].b, 2);
                     }
-                }
+                //}
                 eng[y][x] = deltaX + deltaY;
             }
         }
 
+        //calcula energia total
         for (int y = 0; y < target->height; y++){
             for (int x = 0; x < targetW; x++){
                 if(y == 0){
@@ -166,6 +168,7 @@ void seamcarve(int targetWidth)
         int menorCaminho[target->height];
         int xDoMenorAnterior = 0;
 
+        //primeiro pixel do menor caminho
         for(int x = 0; x < targetW; x++){
             if(menor > engTotal[target->height-1][x]){
                 menor = engTotal[target->height-1][x];
@@ -173,11 +176,10 @@ void seamcarve(int targetWidth)
             }
         }
 
-        printf("xdomenor: %d | energia do menor: %d | energia total: %d \n", xDoMenorAnterior, eng[target->height-1][xDoMenorAnterior], engTotal[target->height-1][xDoMenorAnterior]);
-
         menor = __INT_MAX__;
         menorCaminho[target->height-1] = xDoMenorAnterior;
 
+        //traca o menor caminho
         for(int y = target->height-1; y > 0; y--){
             if(xDoMenorAnterior+1 >= targetW){
                 for(int offset = -1; offset < 1; offset++){
@@ -211,33 +213,32 @@ void seamcarve(int targetWidth)
             ptrM[y][menorCaminho[y]].r = ptrM[y][menorCaminho[y]].g = ptrM[y][menorCaminho[y]].b = 0;
         }
     */
+
+        //corta o menor caminho da image
         for(int y = 0; y < target->height; y++){
             for(int x = menorCaminho[y]; x < target->width; x++){
                 ptr[y][x].r = ptr[y][x+1].r;
                 ptr[y][x].g = ptr[y][x+1].g;
                 ptr[y][x].b = ptr[y][x+1].b;
 
-                copiaMascara[y][x] = copiaMascara[y][x+1];
+                //copiaMascara[y][x] = copiaMascara[y][x+1];
             }
         }
+        
+    }
+    
 
-        for(int y = 0; y < target->height; y++){
-            for(int x = targetW; x < target->width; x++){
-                ptr[y][x].r = ptr[y][x].g = ptr[y][x].b = 255;
-            }
+    //faz tudo fora do limite branco 
+    for(int y = 0; y < target->height; y++){
+        for(int x = target->width; x > targetW; x--){
+            ptr[y][x].r = ptr[y][x].g = ptr[y][x].b = 255;
         }
-
     }
 
-
-    //target->width -= 1;
-    
     // Chame uploadTexture a cada vez que mudar
     // a imagem (pic[2])
     uploadTexture();
     glutPostRedisplay();
-    //free(ptr);
-    //free(ptrM);
 }
 
 
