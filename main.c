@@ -86,138 +86,147 @@ void load(char *name, Img *pic)
 void seamcarve(int targetWidth)
 {
     // Aplica o algoritmo e gera a saida em target->img...
-    int deltaX;
-    int deltaY;
+
     RGB8(*ptr)[target->width] = (RGB8(*)[target->width])target->img;
     RGB8(*ptrM)[mask->width] = (RGB8(*)[mask->width])mask->img;
-    int eng[target->height][target->width];
-    int engTotal[target->height][target->width];
-
-    if(first){
-        RGB8(*ptrS)[source->width] = (RGB8(*)[source->width])source->img;
-        for (int y = 0; y < target->height; y++){
-            for (int x = 0; x < target->width; x++){
-                ptr[y][x].r = ptrS[y][x].r;
-                ptr[y][x].g = ptrS[y][x].g;
-                ptr[y][x].b = ptrS[y][x].b;
-            }
-        }
-        first = FALSE;
-        free(ptrS);
-    }
+    RGB8(*ptrS)[source->width] = (RGB8(*)[source->width])source->img;
+    int copiaMascara[__INT_MAX__][__INT_MAX__];
 
     for (int y = 0; y < target->height; y++){
-        for (int x = 0; x < targetW; x++){
+        for (int x = 0; x < target->width; x++){
+            ptr[y][x].r = ptrS[y][x].r;
+            ptr[y][x].g = ptrS[y][x].g;
+            ptr[y][x].b = ptrS[y][x].b;
+
             if(ptrM[y][x].r < 50 && ptrM[y][x].g > 150 && ptrM[y][x].b < 50){
-                deltaX = 1000000;
-                deltaY = 0;
+                //copiaMascara[y][x] = 2;
             }else if(ptrM[y][x].r > 150 && ptrM[y][x].g < 50 && ptrM[y][x].b < 50){
-                deltaX = -1000000;
-                deltaY = 0;
+                //copiaMascara[y][x] = 1;         
             }else{
+                //copiaMascara[y][x] = 0;
+            }
+        }
+    }
+
+    for(int i = targetW; i < target->width; i++){
+
+        int deltaX;
+        int deltaY;
+        int eng[target->height][target->width];
+        int engTotal[target->height][target->width];
+
+        for (int y = 0; y < target->height; y++){
+            for (int x = 0; x < targetW; x++){
+                if(copiaMascara[y][x] == 2){
+                    deltaX = 1000000;
+                    deltaY = 0;
+                }else if(copiaMascara[y][x] == 1){
+                    deltaX = -1000000;
+                    deltaY = 0;
+                }else{
+                    if(y == 0){
+                        deltaY = pow(ptr[target->height-1][x].r - ptr[y+1][x].r, 2) + pow(ptr[target->height-1][x].g - ptr[y+1][x].g, 2) + pow(ptr[target->height-1][x].b - ptr[y+1][x].b, 2);
+                    }else if(y==target->height-1){
+                        deltaY = pow(ptr[y-1][x].r - ptr[0][x].r, 2) + pow(ptr[y-1][x].g - ptr[0][x].g, 2) + pow(ptr[y-1][x].b - ptr[0][x].b, 2);
+                    }else{
+                        deltaY = pow(ptr[y-1][x].r - ptr[y+1][x].r, 2) + pow(ptr[y-1][x].g - ptr[y+1][x].g, 2) + pow(ptr[y-1][x].b - ptr[y+1][x].b, 2);
+                    }
+
+                    if(x == 0){
+                        deltaX = pow(ptr[y][targetW-1].r - ptr[y][x+1].r, 2) + pow(ptr[y][targetW-1].g - ptr[y][x+1].g, 2) + pow(ptr[y][targetW-1].b - ptr[y][x+1].b, 2);
+                    }else if(x==targetW-1){
+                        deltaX = pow(ptr[y][x-1].r - ptr[y][0].r, 2) + pow(ptr[y][x-1].g - ptr[y][0].g, 2) + pow(ptr[y][x-1].b - ptr[y][0].b, 2);
+                    }else{
+                        deltaX = pow(ptr[y][x-1].r - ptr[y][x+1].r, 2) + pow(ptr[y][x-1].g - ptr[y][x+1].g, 2) + pow(ptr[y][x-1].b - ptr[y][x+1].b, 2);
+                    }
+                }
+                eng[y][x] = deltaX + deltaY;
+            }
+        }
+
+        for (int y = 0; y < target->height; y++){
+            for (int x = 0; x < targetW; x++){
                 if(y == 0){
-                    deltaY = pow(ptr[target->height-1][x].r - ptr[y+1][x].r, 2) + pow(ptr[target->height-1][x].g - ptr[y+1][x].g, 2) + pow(ptr[target->height-1][x].b - ptr[y+1][x].b, 2);
-                }else if(y==target->height-1){
-                    deltaY = pow(ptr[y-1][x].r - ptr[0][x].r, 2) + pow(ptr[y-1][x].g - ptr[0][x].g, 2) + pow(ptr[y-1][x].b - ptr[0][x].b, 2);
+                    engTotal[y][x] = eng[y][x];
                 }else{
-                    deltaY = pow(ptr[y-1][x].r - ptr[y+1][x].r, 2) + pow(ptr[y-1][x].g - ptr[y+1][x].g, 2) + pow(ptr[y-1][x].b - ptr[y+1][x].b, 2);
+                    if(x == 0){
+                        engTotal[y][x] = MIN(engTotal[y-1][x],engTotal[y-1][x+1]) + eng[y][x];
+                    }else if(x==targetW-1){
+                        engTotal[y][x] = MIN(engTotal[y-1][x-1],engTotal[y-1][x]) + eng[y][x];
+                    }else{
+                        engTotal[y][x] = MIN(MIN(engTotal[y-1][x-1],engTotal[y-1][x]),engTotal[y-1][x+1]) + eng[y][x];
+                    }
                 }
-
-                if(x == 0){
-                    deltaX = pow(ptr[y][targetW-1].r - ptr[y][x+1].r, 2) + pow(ptr[y][targetW-1].g - ptr[y][x+1].g, 2) + pow(ptr[y][targetW-1].b - ptr[y][x+1].b, 2);
-                }else if(x==targetW-1){
-                    deltaX = pow(ptr[y][x-1].r - ptr[y][0].r, 2) + pow(ptr[y][x-1].g - ptr[y][0].g, 2) + pow(ptr[y][x-1].b - ptr[y][0].b, 2);
-                }else{
-                    deltaX = pow(ptr[y][x-1].r - ptr[y][x+1].r, 2) + pow(ptr[y][x-1].g - ptr[y][x+1].g, 2) + pow(ptr[y][x-1].b - ptr[y][x+1].b, 2);
-                }
-            }
-            eng[y][x] = deltaX + deltaY;
-        }
-    }
-
-    for (int y = 0; y < target->height; y++){
-        for (int x = 0; x < targetW; x++){
-            if(y == 0){
-                engTotal[y][x] = eng[y][x];
-            }else{
-                if(x == 0){
-                    engTotal[y][x] = MIN(engTotal[y-1][x],engTotal[y-1][x+1]) + eng[y][x];
-                }else if(x==targetW-1){
-                    engTotal[y][x] = MIN(engTotal[y-1][x-1],engTotal[y-1][x]) + eng[y][x];
-                }else{
-                    engTotal[y][x] = MIN(MIN(engTotal[y-1][x-1],engTotal[y-1][x]),engTotal[y-1][x+1]) + eng[y][x];
-                }
-            }
-            
-        }
-    }
-
-    int xDoMenorAtual = 0;
-    int menor = __INT_MAX__;
-    int menorCaminho[target->height];
-    int xDoMenorAnterior = 0;
-
-    for(int x = 0; x < targetW; x++){
-        if(menor > engTotal[target->height-1][x]){
-            menor = engTotal[target->height-1][x];
-            xDoMenorAnterior = x;
-        }
-    }
-
-    printf("xdomenor: %d | energia do menor: %d | energia total: %d \n", xDoMenorAnterior, eng[target->height-1][xDoMenorAnterior], engTotal[target->height-1][xDoMenorAnterior]);
-
-    menor = __INT_MAX__;
-    menorCaminho[target->height-1] = xDoMenorAnterior;
-
-    for(int y = target->height-1; y > 0; y--){
-        if(xDoMenorAnterior+1 >= targetW){
-            for(int offset = -1; offset < 1; offset++){
-                if(menor > engTotal[y-1][xDoMenorAnterior+offset]){
-                    menor = engTotal[y-1][xDoMenorAnterior+offset];
-                    xDoMenorAtual = xDoMenorAnterior+offset;
-                }
-            }
-        }else if (xDoMenorAnterior-1 <= 0){
-            for(int offset = 0; offset <= 1; offset++){
-                if(menor > engTotal[y-1][xDoMenorAnterior+offset]){
-                    menor = engTotal[y-1][xDoMenorAnterior+offset];
-                    xDoMenorAtual = xDoMenorAnterior+offset;
-                }
-            }
-        }else{
-            for(int offset = -1; offset <= 1; offset++){
-                if(menor > engTotal[y-1][xDoMenorAnterior+offset]){
-                    menor = engTotal[y-1][xDoMenorAnterior+offset];
-                    xDoMenorAtual = xDoMenorAnterior+offset;
-                }
+                
             }
         }
-        xDoMenorAnterior = xDoMenorAtual;
-        menorCaminho[y-1] = xDoMenorAnterior;
+
+        int xDoMenorAtual = 0;
+        int menor = __INT_MAX__;
+        int menorCaminho[target->height];
+        int xDoMenorAnterior = 0;
+
+        for(int x = 0; x < targetW; x++){
+            if(menor > engTotal[target->height-1][x]){
+                menor = engTotal[target->height-1][x];
+                xDoMenorAnterior = x;
+            }
+        }
+
+        printf("xdomenor: %d | energia do menor: %d | energia total: %d \n", xDoMenorAnterior, eng[target->height-1][xDoMenorAnterior], engTotal[target->height-1][xDoMenorAnterior]);
+
         menor = __INT_MAX__;
-    }
-/*
-    for(int y = 0; y < target->height; y++){
-        ptr[y][menorCaminho[y]].r = ptr[y][menorCaminho[y]].g = ptr[y][menorCaminho[y]].b = 0;
-        ptrM[y][menorCaminho[y]].r = ptrM[y][menorCaminho[y]].g = ptrM[y][menorCaminho[y]].b = 0;
-    }
-*/
-    for(int y = 0; y < target->height; y++){
-        for(int x = menorCaminho[y]; x < target->width; x++){
-            ptr[y][x].r = ptr[y][x+1].r;
-            ptr[y][x].g = ptr[y][x+1].g;
-            ptr[y][x].b = ptr[y][x+1].b;
+        menorCaminho[target->height-1] = xDoMenorAnterior;
 
-            ptrM[y][x].r = ptrM[y][x+1].r;
-            ptrM[y][x].g = ptrM[y][x+1].g;
-            ptrM[y][x].b = ptrM[y][x+1].b;
+        for(int y = target->height-1; y > 0; y--){
+            if(xDoMenorAnterior+1 >= targetW){
+                for(int offset = -1; offset < 1; offset++){
+                    if(menor > engTotal[y-1][xDoMenorAnterior+offset]){
+                        menor = engTotal[y-1][xDoMenorAnterior+offset];
+                        xDoMenorAtual = xDoMenorAnterior+offset;
+                    }
+                }
+            }else if (xDoMenorAnterior-1 <= 0){
+                for(int offset = 0; offset <= 1; offset++){
+                    if(menor > engTotal[y-1][xDoMenorAnterior+offset]){
+                        menor = engTotal[y-1][xDoMenorAnterior+offset];
+                        xDoMenorAtual = xDoMenorAnterior+offset;
+                    }
+                }
+            }else{
+                for(int offset = -1; offset <= 1; offset++){
+                    if(menor > engTotal[y-1][xDoMenorAnterior+offset]){
+                        menor = engTotal[y-1][xDoMenorAnterior+offset];
+                        xDoMenorAtual = xDoMenorAnterior+offset;
+                    }
+                }
+            }
+            xDoMenorAnterior = xDoMenorAtual;
+            menorCaminho[y-1] = xDoMenorAnterior;
+            menor = __INT_MAX__;
         }
-    }
+    /*
+        for(int y = 0; y < target->height; y++){
+            ptr[y][menorCaminho[y]].r = ptr[y][menorCaminho[y]].g = ptr[y][menorCaminho[y]].b = 0;
+            ptrM[y][menorCaminho[y]].r = ptrM[y][menorCaminho[y]].g = ptrM[y][menorCaminho[y]].b = 0;
+        }
+    */
+        for(int y = 0; y < target->height; y++){
+            for(int x = menorCaminho[y]; x < target->width; x++){
+                ptr[y][x].r = ptr[y][x+1].r;
+                ptr[y][x].g = ptr[y][x+1].g;
+                ptr[y][x].b = ptr[y][x+1].b;
 
-    for(int y = 0; y < target->height; y++){
-        for(int x = targetW; x < target->width; x++){
-            ptr[y][x].r = ptr[y][x].g = ptr[y][x].b = 255;
+                copiaMascara[y][x] = copiaMascara[y][x+1];
+            }
         }
+
+        for(int y = 0; y < target->height; y++){
+            for(int x = targetW; x < target->width; x++){
+                ptr[y][x].r = ptr[y][x].g = ptr[y][x].b = 255;
+            }
+        }
+
     }
 
 
@@ -354,13 +363,13 @@ void arrow_keys(int a_keys, int x, int y)
     switch (a_keys)
     {
     case GLUT_KEY_RIGHT:
-        if (targetW <= pic[2].width - 1)
-            targetW += 1;
+        if (targetW <= pic[2].width - 10)
+            targetW += 10;
         seamcarve(targetW);
         break;
     case GLUT_KEY_LEFT:
-        if (targetW > 1)
-            targetW -= 1;
+        if (targetW > 10)
+            targetW -= 10;
         seamcarve(targetW);
         break;
     default:
