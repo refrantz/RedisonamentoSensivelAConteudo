@@ -80,6 +80,7 @@ void load(char *name, Img *pic)
     printf("Load: %d x %d x %d\n", pic->width, pic->height, chan);
 }
 
+
 //
 // Implemente AQUI o seu algoritmo
 void seamcarve(int targetWidth)
@@ -102,16 +103,16 @@ void seamcarve(int targetWidth)
             }
         }
         first = FALSE;
+        free(ptrS);
     }
 
     for (int y = 0; y < target->height; y++){
         for (int x = 0; x < targetW; x++){
-
-            if(ptrM[y][x].r < 20 && ptrM[y][x].g > 200 && ptrM[y][x].b < 20){
-                deltaX = 10000;
+            if(ptrM[y][x].r < 50 && ptrM[y][x].g > 150 && ptrM[y][x].b < 50){
+                deltaX = 1000000;
                 deltaY = 0;
-            }else if(ptrM[y][x].r > 200 && ptrM[y][x].g < 20 && ptrM[y][x].b < 20){
-                deltaX = -10000;
+            }else if(ptrM[y][x].r > 150 && ptrM[y][x].g < 50 && ptrM[y][x].b < 50){
+                deltaX = -1000000;
                 deltaY = 0;
             }else{
                 if(y == 0){
@@ -151,10 +152,10 @@ void seamcarve(int targetWidth)
         }
     }
 
-    int xDoMenorAtual = -2;
+    int xDoMenorAtual = 0;
     int menor = __INT_MAX__;
     int menorCaminho[target->height];
-    int xDoMenorAnterior = -2;
+    int xDoMenorAnterior = 0;
 
     for(int x = 0; x < targetW; x++){
         if(menor > engTotal[target->height-1][x]){
@@ -163,27 +164,44 @@ void seamcarve(int targetWidth)
         }
     }
 
+    printf("xdomenor: %d | energia do menor: %d | energia total: %d \n", xDoMenorAnterior, eng[target->height-1][xDoMenorAnterior], engTotal[target->height-1][xDoMenorAnterior]);
+
     menor = __INT_MAX__;
     menorCaminho[target->height-1] = xDoMenorAnterior;
 
     for(int y = target->height-1; y > 0; y--){
-        for(int offset = -1; offset <= 1; offset++){
-            if(menor > engTotal[y-1][xDoMenorAnterior+offset]){
-                menor = engTotal[y-1][xDoMenorAnterior+offset];
-                xDoMenorAtual = xDoMenorAnterior+offset;
+        if(xDoMenorAnterior+1 >= targetW){
+            for(int offset = -1; offset < 1; offset++){
+                if(menor > engTotal[y-1][xDoMenorAnterior+offset]){
+                    menor = engTotal[y-1][xDoMenorAnterior+offset];
+                    xDoMenorAtual = xDoMenorAnterior+offset;
+                }
+            }
+        }else if (xDoMenorAnterior-1 <= 0){
+            for(int offset = 0; offset <= 1; offset++){
+                if(menor > engTotal[y-1][xDoMenorAnterior+offset]){
+                    menor = engTotal[y-1][xDoMenorAnterior+offset];
+                    xDoMenorAtual = xDoMenorAnterior+offset;
+                }
+            }
+        }else{
+            for(int offset = -1; offset <= 1; offset++){
+                if(menor > engTotal[y-1][xDoMenorAnterior+offset]){
+                    menor = engTotal[y-1][xDoMenorAnterior+offset];
+                    xDoMenorAtual = xDoMenorAnterior+offset;
+                }
             }
         }
-        
         xDoMenorAnterior = xDoMenorAtual;
         menorCaminho[y-1] = xDoMenorAnterior;
         menor = __INT_MAX__;
     }
-
+/*
     for(int y = 0; y < target->height; y++){
         ptr[y][menorCaminho[y]].r = ptr[y][menorCaminho[y]].g = ptr[y][menorCaminho[y]].b = 0;
-        //ptrM[y][menorCaminho[y]].r = ptrM[y][menorCaminho[y]].g = ptrM[y][menorCaminho[y]].b = 0;
+        ptrM[y][menorCaminho[y]].r = ptrM[y][menorCaminho[y]].g = ptrM[y][menorCaminho[y]].b = 0;
     }
-/*
+*/
     for(int y = 0; y < target->height; y++){
         for(int x = menorCaminho[y]; x < target->width; x++){
             ptr[y][x].r = ptr[y][x+1].r;
@@ -195,13 +213,22 @@ void seamcarve(int targetWidth)
             ptrM[y][x].b = ptrM[y][x+1].b;
         }
     }
-*/
+
+    for(int y = 0; y < target->height; y++){
+        for(int x = targetW; x < target->width; x++){
+            ptr[y][x].r = ptr[y][x].g = ptr[y][x].b = 255;
+        }
+    }
+
+
     //target->width -= 1;
     
     // Chame uploadTexture a cada vez que mudar
     // a imagem (pic[2])
     uploadTexture();
     glutPostRedisplay();
+    //free(ptr);
+    //free(ptrM);
 }
 
 
@@ -327,13 +354,13 @@ void arrow_keys(int a_keys, int x, int y)
     switch (a_keys)
     {
     case GLUT_KEY_RIGHT:
-        if (targetW <= pic[2].width - 10)
-            targetW += 10;
+        if (targetW <= pic[2].width - 1)
+            targetW += 1;
         seamcarve(targetW);
         break;
     case GLUT_KEY_LEFT:
-        if (targetW > 10)
-            targetW -= 10;
+        if (targetW > 1)
+            targetW -= 1;
         seamcarve(targetW);
         break;
     default:
