@@ -88,6 +88,7 @@ void seamcarve(int targetWidth)
     int deltaX;
     int deltaY;
     RGB8(*ptr)[target->width] = (RGB8(*)[target->width])target->img;
+    RGB8(*ptrM)[mask->width] = (RGB8(*)[mask->width])mask->img;
     int eng[target->height][target->width];
     int engTotal[target->height][target->width];
 
@@ -106,22 +107,29 @@ void seamcarve(int targetWidth)
     for (int y = 0; y < target->height; y++){
         for (int x = 0; x < targetW; x++){
 
-            if(y == 0){
-                deltaY = pow(ptr[target->height-1][x].r - ptr[y+1][x].r, 2) + pow(ptr[target->height-1][x].g - ptr[y+1][x].g, 2) + pow(ptr[target->height-1][x].b - ptr[y+1][x].b, 2);
-            }else if(y==target->height-1){
-                deltaY = pow(ptr[y-1][x].r - ptr[0][x].r, 2) + pow(ptr[y-1][x].g - ptr[0][x].g, 2) + pow(ptr[y-1][x].b - ptr[0][x].b, 2);
+            if(ptrM[y][x].r < 20 && ptrM[y][x].g > 200 && ptrM[y][x].b < 20){
+                deltaX = 10000;
+                deltaY = 0;
+            }else if(ptrM[y][x].r > 200 && ptrM[y][x].g < 20 && ptrM[y][x].b < 20){
+                deltaX = -10000;
+                deltaY = 0;
             }else{
-                deltaY = pow(ptr[y-1][x].r - ptr[y+1][x].r, 2) + pow(ptr[y-1][x].g - ptr[y+1][x].g, 2) + pow(ptr[y-1][x].b - ptr[y+1][x].b, 2);
-            }
+                if(y == 0){
+                    deltaY = pow(ptr[target->height-1][x].r - ptr[y+1][x].r, 2) + pow(ptr[target->height-1][x].g - ptr[y+1][x].g, 2) + pow(ptr[target->height-1][x].b - ptr[y+1][x].b, 2);
+                }else if(y==target->height-1){
+                    deltaY = pow(ptr[y-1][x].r - ptr[0][x].r, 2) + pow(ptr[y-1][x].g - ptr[0][x].g, 2) + pow(ptr[y-1][x].b - ptr[0][x].b, 2);
+                }else{
+                    deltaY = pow(ptr[y-1][x].r - ptr[y+1][x].r, 2) + pow(ptr[y-1][x].g - ptr[y+1][x].g, 2) + pow(ptr[y-1][x].b - ptr[y+1][x].b, 2);
+                }
 
-            if(x == 0){
-                deltaX = pow(ptr[y][targetW-1].r - ptr[y][x+1].r, 2) + pow(ptr[y][targetW-1].g - ptr[y][x+1].g, 2) + pow(ptr[y][targetW-1].b - ptr[y][x+1].b, 2);
-            }else if(x==targetW-1){
-                deltaX = pow(ptr[y][x-1].r - ptr[y][0].r, 2) + pow(ptr[y][x-1].g - ptr[y][0].g, 2) + pow(ptr[y][x-1].b - ptr[y][0].b, 2);
-            }else{
-                deltaX = pow(ptr[y][x-1].r - ptr[y][x+1].r, 2) + pow(ptr[y][x-1].g - ptr[y][x+1].g, 2) + pow(ptr[y][x-1].b - ptr[y][x+1].b, 2);
+                if(x == 0){
+                    deltaX = pow(ptr[y][targetW-1].r - ptr[y][x+1].r, 2) + pow(ptr[y][targetW-1].g - ptr[y][x+1].g, 2) + pow(ptr[y][targetW-1].b - ptr[y][x+1].b, 2);
+                }else if(x==targetW-1){
+                    deltaX = pow(ptr[y][x-1].r - ptr[y][0].r, 2) + pow(ptr[y][x-1].g - ptr[y][0].g, 2) + pow(ptr[y][x-1].b - ptr[y][0].b, 2);
+                }else{
+                    deltaX = pow(ptr[y][x-1].r - ptr[y][x+1].r, 2) + pow(ptr[y][x-1].g - ptr[y][x+1].g, 2) + pow(ptr[y][x-1].b - ptr[y][x+1].b, 2);
+                }
             }
-            
             eng[y][x] = deltaX + deltaY;
         }
     }
@@ -139,6 +147,7 @@ void seamcarve(int targetWidth)
                     engTotal[y][x] = MIN(MIN(engTotal[y-1][x-1],engTotal[y-1][x]),engTotal[y-1][x+1]) + eng[y][x];
                 }
             }
+            
         }
     }
 
@@ -167,20 +176,26 @@ void seamcarve(int targetWidth)
         
         xDoMenorAnterior = xDoMenorAtual;
         menorCaminho[y-1] = xDoMenorAnterior;
+        menor = __INT_MAX__;
     }
 
     for(int y = 0; y < target->height; y++){
         ptr[y][menorCaminho[y]].r = ptr[y][menorCaminho[y]].g = ptr[y][menorCaminho[y]].b = 0;
+        //ptrM[y][menorCaminho[y]].r = ptrM[y][menorCaminho[y]].g = ptrM[y][menorCaminho[y]].b = 0;
     }
-
+/*
     for(int y = 0; y < target->height; y++){
-        for(int x = menorCaminho[y]; x < targetW; x++){
+        for(int x = menorCaminho[y]; x < target->width; x++){
             ptr[y][x].r = ptr[y][x+1].r;
             ptr[y][x].g = ptr[y][x+1].g;
             ptr[y][x].b = ptr[y][x+1].b;
+
+            ptrM[y][x].r = ptrM[y][x+1].r;
+            ptrM[y][x].g = ptrM[y][x+1].g;
+            ptrM[y][x].b = ptrM[y][x+1].b;
         }
     }
-
+*/
     //target->width -= 1;
     
     // Chame uploadTexture a cada vez que mudar
