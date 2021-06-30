@@ -98,6 +98,7 @@ void seamcarve(int targetWidth)
             ptr[y][x].g = ptrS[y][x].g;
             ptr[y][x].b = ptrS[y][x].b;
 
+
             if(ptrM[y][x].r < 50 && ptrM[y][x].g > 150 && ptrM[y][x].b < 50){
                 copiaMascara[y][x] = 2;
             }else if(ptrM[y][x].r > 150 && ptrM[y][x].g < 50 && ptrM[y][x].b < 50){
@@ -105,26 +106,24 @@ void seamcarve(int targetWidth)
             }else{
                 copiaMascara[y][x] = 0;
             }
-        }
+        }   
     }
+    //free(ptrM);
 
     for(int i = targetW; i < target->width; i++){
 
-        int deltaX;
-        int deltaY;
+        int deltaX = 0;
+        int deltaY = 0;
         int eng[target->height][target->width];
-        int engTotal[target->height][target->width];
 
         //calcula energia
         for (int y = 0; y < target->height; y++){
             for (int x = 0; x < targetW; x++){
-                //if(copiaMascara[y][x] == 2){
-                    //deltaX = 1000000;
-                    //deltaY = 0;
-                //}else if(copiaMascara[y][x] == 1){
-                    //deltaX = -1000000;
-                    //deltaY = 0;
-                //}else{
+                if(copiaMascara[y][x] == 2){
+                    deltaX = 100000;
+                }else if(copiaMascara[y][x] == 1){
+                    deltaX = -100000;
+                }else{
                     if(y == 0){
                         deltaY = pow(ptr[target->height-1][x].r - ptr[y+1][x].r, 2) + pow(ptr[target->height-1][x].g - ptr[y+1][x].g, 2) + pow(ptr[target->height-1][x].b - ptr[y+1][x].b, 2);
                     }else if(y==target->height-1){
@@ -140,7 +139,8 @@ void seamcarve(int targetWidth)
                     }else{
                         deltaX = pow(ptr[y][x-1].r - ptr[y][x+1].r, 2) + pow(ptr[y][x-1].g - ptr[y][x+1].g, 2) + pow(ptr[y][x-1].b - ptr[y][x+1].b, 2);
                     }
-                //}
+                }
+                
                 eng[y][x] = deltaX + deltaY;
             }
         }
@@ -148,18 +148,13 @@ void seamcarve(int targetWidth)
         //calcula energia total
         for (int y = 0; y < target->height; y++){
             for (int x = 0; x < targetW; x++){
-                if(y == 0){
-                    engTotal[y][x] = eng[y][x];
+                if(x == 0){
+                    eng[y][x] = MIN(eng[y-1][x],eng[y-1][x+1]) + eng[y][x];
+                }else if(x==targetW-1){
+                    eng[y][x] = MIN(eng[y-1][x-1],eng[y-1][x]) + eng[y][x];
                 }else{
-                    if(x == 0){
-                        engTotal[y][x] = MIN(engTotal[y-1][x],engTotal[y-1][x+1]) + eng[y][x];
-                    }else if(x==targetW-1){
-                        engTotal[y][x] = MIN(engTotal[y-1][x-1],engTotal[y-1][x]) + eng[y][x];
-                    }else{
-                        engTotal[y][x] = MIN(MIN(engTotal[y-1][x-1],engTotal[y-1][x]),engTotal[y-1][x+1]) + eng[y][x];
-                    }
+                    eng[y][x] = MIN(MIN(eng[y-1][x-1],eng[y-1][x]),eng[y-1][x+1]) + eng[y][x];
                 }
-                
             }
         }
 
@@ -170,8 +165,8 @@ void seamcarve(int targetWidth)
 
         //primeiro pixel do menor caminho
         for(int x = 0; x < targetW; x++){
-            if(menor > engTotal[target->height-1][x]){
-                menor = engTotal[target->height-1][x];
+            if(menor > eng[target->height-1][x]){
+                menor = eng[target->height-1][x];
                 xDoMenorAnterior = x;
             }
         }
@@ -183,22 +178,22 @@ void seamcarve(int targetWidth)
         for(int y = target->height-1; y > 0; y--){
             if(xDoMenorAnterior+1 >= targetW){
                 for(int offset = -1; offset < 1; offset++){
-                    if(menor > engTotal[y-1][xDoMenorAnterior+offset]){
-                        menor = engTotal[y-1][xDoMenorAnterior+offset];
+                    if(menor > eng[y-1][xDoMenorAnterior+offset]){
+                        menor = eng[y-1][xDoMenorAnterior+offset];
                         xDoMenorAtual = xDoMenorAnterior+offset;
                     }
                 }
             }else if (xDoMenorAnterior-1 <= 0){
                 for(int offset = 0; offset <= 1; offset++){
-                    if(menor > engTotal[y-1][xDoMenorAnterior+offset]){
-                        menor = engTotal[y-1][xDoMenorAnterior+offset];
+                    if(menor > eng[y-1][xDoMenorAnterior+offset]){
+                        menor = eng[y-1][xDoMenorAnterior+offset];
                         xDoMenorAtual = xDoMenorAnterior+offset;
                     }
                 }
             }else{
                 for(int offset = -1; offset <= 1; offset++){
-                    if(menor > engTotal[y-1][xDoMenorAnterior+offset]){
-                        menor = engTotal[y-1][xDoMenorAnterior+offset];
+                    if(menor > eng[y-1][xDoMenorAnterior+offset]){
+                        menor = eng[y-1][xDoMenorAnterior+offset];
                         xDoMenorAtual = xDoMenorAnterior+offset;
                     }
                 }
@@ -221,7 +216,7 @@ void seamcarve(int targetWidth)
                 ptr[y][x].g = ptr[y][x+1].g;
                 ptr[y][x].b = ptr[y][x+1].b;
 
-                //copiaMascara[y][x] = copiaMascara[y][x+1];
+                copiaMascara[y][x] = copiaMascara[y][x+1];
             }
         }
         
